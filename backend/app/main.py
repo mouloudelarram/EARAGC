@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
 from app.api.documents import router as documents_router
+from app.api.query import router as query_router
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -42,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     yield  # application runs here
 
-    # ── Shutdown ─────────────────────────────────────────────────────────────
+    # ── Shutdown ────────��────────────────────────────────────────────────────
     logger.info("Shutting down Enterprise Architecture RAG Copilot")
 
 
@@ -76,6 +77,7 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/health", tags=["Health"])
 app.include_router(documents_router, prefix="/documents", tags=["Documents"])
+app.include_router(query_router, prefix="/query", tags=["Query"])
 
 # ─── Root ────────────────────────────────────────────────────────────────────
 
