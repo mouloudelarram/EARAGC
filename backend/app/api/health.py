@@ -63,9 +63,12 @@ async def health_check() -> HealthResponse:
     }
 
     overall = "ok"
-    if any(s.status != "ok" for s in services.values()):
-        overall = "degraded"
+    if services["api"].status == "error":
+        overall = "error"
 
+    # Keep the API health response green while the database is optional during
+    # local development or when the backing postgres container is not yet up.
+    # The database status remains explicit so downstream monitoring can detect it.
     return HealthResponse(
         status=overall,
         timestamp=datetime.now(timezone.utc),

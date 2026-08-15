@@ -1,17 +1,21 @@
 """
 Application configuration — loaded from environment variables / .env file.
 """
+from pathlib import Path
 from typing import List
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+ROOT_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+
+
 class Settings(BaseSettings):
     """All application settings, configurable via environment variables."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[str(ROOT_ENV_PATH), ".env"],
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

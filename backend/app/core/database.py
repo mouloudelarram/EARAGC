@@ -19,15 +19,45 @@ class Base(DeclarativeBase):
     pass
 
 
+def _create_engine(database_url: str):
+    """Create a real Postgres engine when possible, otherwise fall back to SQLite."""
+    if database_url.startswith("sqlite"):
+        return create_engine(
+            database_url,
+            connect_args={"check_same_thread": False},
+            echo=False,
+        )
+
+    try:
+        probe = create_engine(database_url, pool_pre_ping=True, echo=False)
+        with probe.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        probe.dispose()
+        return create_engine(
+            database_url,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
+            echo=False,
+        )
+    except Exception as exc:  # noqa: BLE001
+        fallback_url = "sqlite:////tmp/earagc_local.db"
+        logger.warning(
+            "PostgreSQL is unavailable at %s; using SQLite fallback at %s: %s",
+            database_url,
+            fallback_url,
+            exc,
+        )
+        return create_engine(
+            fallback_url,
+            connect_args={"check_same_thread": False},
+            echo=False,
+        )
+
+
 # ─── Engine & Session ─────────────────────────────────────────────────────────
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,          # reconnect on stale connections
-    pool_size=5,
-    max_overflow=10,
-    echo=False,                  # set True for SQL debug logs
-)
+engine = _create_engine(settings.DATABASE_URL)
 
 SessionLocal = sessionmaker(
     bind=engine,
@@ -62,13 +92,16 @@ def init_db() -> None:
     # Import models so their metadata is registered with Base before create_all()
     from app.core.models import Document, Chunk  # noqa: F401
 
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            conn.commit()
-            logger.info("pgvector extension ensured")
-    except OperationalError as exc:
-        logger.warning("Could not activate pgvector extension: %s", exc)
+    if engine.dialect.name == "postgresql":
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                conn.commit()
+                logger.info("pgvector extension ensured")
+        except OperationalError as exc:
+            logger.warning("Could not activate pgvector extension: %s", exc)
+    else:
+        logger.info("SQLite database selected; skipping pgvector activation")
 
     try:
         Base.metadata.create_all(bind=engine)

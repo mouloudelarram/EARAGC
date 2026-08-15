@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 // ================================
 // API Service — communicates with FastAPI backend
 // ================================
@@ -36,10 +38,12 @@ export interface QueryResponse {
   }
 }
 
+import type { DocumentType } from '../types'
+
 export interface DocumentInfo {
   id: string
   filename: string
-  document_type: string
+  document_type: DocumentType
   chunk_count: number
   created_at: string
   source: string | null

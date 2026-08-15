@@ -46,7 +46,7 @@ export default function DocumentsPage() {
     setLoading(true)
     try {
       const docs = await api.listDocuments()
-      setDocuments(docs)
+      setDocuments(docs as Document[])
     } catch {
       // Documents endpoint not yet implemented — show empty state
       setDocuments([])
