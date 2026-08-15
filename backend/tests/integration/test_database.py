@@ -14,7 +14,7 @@ import uuid
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from app.core.config import settings
 from app.core.database import Base, init_db
@@ -61,12 +61,21 @@ def db_engine():
 
 @pytest.fixture()
 def db_session(db_engine):
-    """Function-scoped session that rolls back after each test."""
-    Session = sessionmaker(bind=db_engine, autocommit=False, autoflush=False)
-    session = Session()
+    """
+    Function-scoped session with savepoint isolation.
+    Every session.commit() inside the test creates a SAVEPOINT instead of a
+    real commit, so the outer transaction.rollback() undoes everything after
+    the test — no data leaks between tests or across runs.
+    """
+    connection = db_engine.connect()
+    trans = connection.begin()
+    # join_transaction_mode="create_savepoint" turns every session.commit()
+    # into a SAVEPOINT / RELEASE SAVEPOINT, keeping the outer tx open.
+    session = Session(connection, join_transaction_mode="create_savepoint")
     yield session
-    session.rollback()
     session.close()
+    trans.rollback()
+    connection.close()
 
 
 # ─── Tests ────────────────────────────────────────────────────────────────────
