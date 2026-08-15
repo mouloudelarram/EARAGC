@@ -2,6 +2,7 @@
 Enterprise Architecture RAG Copilot — FastAPI Application Entry Point
 """
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,13 +13,38 @@ from app.core.config import settings
 from app.core.logging import setup_logging
 
 # Pre-load ORM models so Base.metadata is populated before init_db()
-# Imported here (not inside on_startup) to fail fast on any model errors.
 import app.core.models  # noqa: F401
 
 # Initialize structured logging
 setup_logging()
 
 logger = logging.getLogger(__name__)
+
+
+# ─── Lifespan ────────────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── Startup ──────────────────────────────────────────────────────────────
+    logger.info(
+        "Starting Enterprise Architecture RAG Copilot",
+        extra={
+            "ollama_model": settings.OLLAMA_MODEL,
+            "embedding_model": settings.EMBEDDING_MODEL,
+        },
+    )
+    try:
+        from app.core.database import init_db
+        init_db()
+        logger.info("Database initialisation complete")
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Database initialisation failed: %s", exc)
+
+    yield  # application runs here
+
+    # ── Shutdown ─────────────────────────────────────────────────────────────
+    logger.info("Shutting down Enterprise Architecture RAG Copilot")
+
 
 # ─── Application ─────────────────────────────────────────────────────────────
 
@@ -31,6 +57,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # ─── Middleware ───────────────────────────────────────────────────────────────
@@ -59,30 +86,3 @@ async def root() -> dict:
         "docs": "/docs",
         "health": "/health",
     }
-
-
-# ─── Startup / Shutdown ───────────────────────────────────────────────────────
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    logger.info(
-        "Starting Enterprise Architecture RAG Copilot",
-        extra={
-            "ollama_model": settings.OLLAMA_MODEL,
-            "embedding_model": settings.EMBEDDING_MODEL,
-        },
-    )
-    # Initialise database tables + pgvector extension
-    try:
-        from app.core.database import init_db
-        init_db()
-        logger.info("Database initialisation complete")
-    except Exception as exc:  # noqa: BLE001
-        logger.error("Database initialisation failed: %s", exc)
-
-
-@app.on_event("shutdown")
-async def on_shutdown() -> None:
-    logger.info("Shutting down Enterprise Architecture RAG Copilot")
-
-
