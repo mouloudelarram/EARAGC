@@ -64,7 +64,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    # Allow any localhost / 127.0.0.1 / Docker-network IP origin (dev-friendly).
+    # Using allow_origin_regex so allow_credentials=True can stay enabled.
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
