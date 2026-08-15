@@ -15,8 +15,7 @@ from datetime import datetime
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.document import Document
-from app.models.chunk import Chunk
+from app.core.models import Chunk, Document
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.chunk_repository import ChunkRepository, ChunkCreate
 
@@ -212,4 +211,5 @@ def delete_document(doc_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Document {doc_id} not found",
         )
+
 

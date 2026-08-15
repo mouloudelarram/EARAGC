@@ -8,7 +8,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.document import Document
+from app.core.models import Document
 
 
 class DocumentRepository:

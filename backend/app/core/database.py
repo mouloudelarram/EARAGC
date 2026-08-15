@@ -59,8 +59,8 @@ def init_db() -> None:
 
     Called once on application startup.
     """
-    # Import models so their metadata is registered before create_all()
-    from app.models import Document, Chunk  # noqa: F401
+    # Import models so their metadata is registered with Base before create_all()
+    from app.core.models import Document, Chunk  # noqa: F401
 
     try:
         with engine.connect() as conn:

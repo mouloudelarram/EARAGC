@@ -9,7 +9,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.chunk import Chunk
+from app.core.models import Chunk
 
 
 @dataclass

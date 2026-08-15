@@ -12,7 +12,8 @@ from app.core.config import settings
 from app.core.logging import setup_logging
 
 # Pre-load ORM models so Base.metadata is populated before init_db()
-import app.models  # noqa: F401, E402
+# Imported here (not inside on_startup) to fail fast on any model errors.
+import app.core.models  # noqa: F401
 
 # Initialize structured logging
 setup_logging()
