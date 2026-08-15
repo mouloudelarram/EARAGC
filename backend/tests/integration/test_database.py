@@ -14,7 +14,7 @@ import uuid
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.core.database import Base, init_db
@@ -23,7 +23,7 @@ from app.repositories.document_repository import DocumentRepository
 from app.repositories.chunk_repository import ChunkRepository, ChunkCreate
 
 
-# ─── Fixtures ─────────────────────────────────────────────────────────────────
+# ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _db_available() -> bool:
     """Return True if the test database is reachable."""
@@ -43,11 +43,16 @@ requires_db = pytest.mark.skipif(
 )
 
 
+# ─── Fixtures ─────────────────────────────────────────────────────────────────
+
 @pytest.fixture(scope="module")
 def db_engine():
-    """Module-scoped engine pointing at the test database."""
+    """
+    Module-scoped engine.
+    Creates tables and TRUNCATES test data at the start of every run so
+    fixed file_hash values never cause UniqueViolation on repeated runs.
+    """
     engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
-    # Ensure pgvector extension + tables exist
     try:
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
@@ -55,27 +60,21 @@ def db_engine():
     except Exception:
         pass
     Base.metadata.create_all(bind=engine)
+    # Wipe data from any previous test run (keeps the schema intact)
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE chunks, documents CASCADE"))
     yield engine
     engine.dispose()
 
 
 @pytest.fixture()
 def db_session(db_engine):
-    """
-    Function-scoped session with savepoint isolation.
-    Every session.commit() inside the test creates a SAVEPOINT instead of a
-    real commit, so the outer transaction.rollback() undoes everything after
-    the test — no data leaks between tests or across runs.
-    """
-    connection = db_engine.connect()
-    trans = connection.begin()
-    # join_transaction_mode="create_savepoint" turns every session.commit()
-    # into a SAVEPOINT / RELEASE SAVEPOINT, keeping the outer tx open.
-    session = Session(connection, join_transaction_mode="create_savepoint")
+    """Function-scoped session — rolls back uncommitted changes after each test."""
+    Session = sessionmaker(bind=db_engine, autocommit=False, autoflush=False)
+    session = Session()
     yield session
+    session.rollback()
     session.close()
-    trans.rollback()
-    connection.close()
 
 
 # ─── Tests ────────────────────────────────────────────────────────────────────
@@ -213,24 +212,19 @@ class TestChunkRepository:
     def test_cascade_delete_on_document_delete(self, db_session):
         """Deleting a document removes all its chunks (CASCADE)."""
         doc = self._make_doc(db_session)
-        chunks_in = [
+        ChunkRepository.create_many(db_session, [
             ChunkCreate(document_id=doc.id, content="chunk", chunk_index=0)
-        ]
-        ChunkRepository.create_many(db_session, chunks_in)
-
+        ])
         DocumentRepository.delete(db_session, doc.id)
-
-        remaining = ChunkRepository.get_by_document(db_session, doc.id)
-        assert remaining == []
+        assert ChunkRepository.get_by_document(db_session, doc.id) == []
 
     def test_delete_by_document(self, db_session):
         """delete_by_document returns count of deleted rows."""
         doc = self._make_doc(db_session)
-        chunks_in = [
+        ChunkRepository.create_many(db_session, [
             ChunkCreate(document_id=doc.id, content=f"c{i}", chunk_index=i)
             for i in range(4)
-        ]
-        ChunkRepository.create_many(db_session, chunks_in)
+        ])
         deleted_count = ChunkRepository.delete_by_document(db_session, doc.id)
         assert deleted_count == 4
         assert ChunkRepository.get_by_document(db_session, doc.id) == []
