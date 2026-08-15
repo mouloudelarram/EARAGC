@@ -7,8 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.health import router as health_router
+from app.api.documents import router as documents_router
 from app.core.config import settings
 from app.core.logging import setup_logging
+
+# Pre-load ORM models so Base.metadata is populated before init_db()
+import app.models  # noqa: F401, E402
 
 # Initialize structured logging
 setup_logging()
@@ -41,6 +45,7 @@ app.add_middleware(
 # ─── Routers ─────────────────────────────────────────────────────────────────
 
 app.include_router(health_router, prefix="/health", tags=["Health"])
+app.include_router(documents_router, prefix="/documents", tags=["Documents"])
 
 # ─── Root ────────────────────────────────────────────────────────────────────
 
