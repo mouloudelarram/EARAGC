@@ -37,17 +37,40 @@ for i in $(seq 1 30); do
   sleep 5
 done
 
-# ── 5. Pull Ollama model ───────────────────────────────────────────────────────
-OLLAMA_MODEL="${OLLAMA_MODEL:-llama3.2}"
-echo "📦  Pulling Ollama model: $OLLAMA_MODEL ..."
-docker compose exec -T ollama ollama pull "$OLLAMA_MODEL" || \
-  echo "⚠️   Could not pull model — you may need to pull it manually"
+# ── 5. Ensure a usable local Ollama model is available ───────────────────────
+OLLAMA_MODEL="${OLLAMA_MODEL:-$(grep -E '^OLLAMA_MODEL=' .env 2>/dev/null | cut -d= -f2- || true)}"
+if [ -z "${OLLAMA_MODEL}" ]; then
+  OLLAMA_MODEL="llama3.1:latest"
+fi
 
-# ── 6. Seed the database (optional) ───────────────────────────────────────────
+if curl -fsS http://localhost:11434/api/tags >/dev/null 2>&1; then
+  if curl -fsS "http://localhost:11434/api/tags" | grep -Fq "\"name\":\s*\"${OLLAMA_MODEL}\""; then
+    echo "📦  Ollama model already available on localhost: $OLLAMA_MODEL"
+  elif curl -fsS "http://localhost:11434/api/tags" | grep -Fq '"name": "llama3.1:latest"'; then
+    OLLAMA_MODEL="llama3.1:latest"
+    echo "📦  Falling back to localhost Ollama model: $OLLAMA_MODEL"
+  else
+    echo "⚠️   No usable local Ollama model was found on localhost:11434."
+    echo "   You can install one manually with: docker compose exec ollama ollama pull llama3.1:latest"
+    echo "   or: curl -sS http://localhost:11434/api/tags"
+  fi
+elif docker compose exec -T ollama sh -lc "ollama list 2>/dev/null | grep -Fq '$OLLAMA_MODEL'" >/dev/null 2>&1; then
+  echo "📦  Ollama model already available in the compose container: $OLLAMA_MODEL"
+elif docker compose exec -T ollama sh -lc "ollama list 2>/dev/null | grep -Fq 'llama3.1:latest'" >/dev/null 2>&1; then
+  OLLAMA_MODEL="llama3.1:latest"
+  echo "📦  Falling back to compose Ollama model: $OLLAMA_MODEL"
+else
+  echo "⚠️   No local Ollama model matched '$OLLAMA_MODEL' or 'llama3.1:latest'."
+  echo "   You can install one manually with: docker compose exec ollama ollama pull llama3.1:latest"
+fi
+
+# ── 6. Seed the database (optional, host-side script) ───────────────────────
 if [ -f scripts/seed_database.py ]; then
   echo "🌱  Seeding the database..."
-  docker compose exec -T backend python scripts/seed_database.py || \
+  python3 scripts/seed_database.py || \
     echo "⚠️   Seeding failed or skipped — you can run it manually later"
+else
+  echo "ℹ️   Seed script not present on this host; skipping automatic seeding"
 fi
 
 echo ""

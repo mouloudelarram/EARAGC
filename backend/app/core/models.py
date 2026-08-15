@@ -4,8 +4,8 @@ Centralised here (app/core/) to avoid package-resolution issues.
 """
 import uuid
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -104,7 +104,7 @@ class Chunk(Base):
     page_number = Column(Integer, nullable=True, comment="Source page number (PDFs only)")
     section = Column(String(512), nullable=True, comment="Section heading")
     extra_metadata = Column(
-        JSONB,
+        JSON,
         nullable=False,
         server_default="{}",
         comment="Arbitrary key/value pairs",

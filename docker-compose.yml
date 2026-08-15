@@ -28,7 +28,7 @@ services:
       # Hardcoded Docker-internal service URLs — never use localhost here
       - DATABASE_URL=postgresql://${POSTGRES_USER:-raguser}:${POSTGRES_PASSWORD:-ragpass}@postgres:5432/${POSTGRES_DB:-ragdb}
       - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:latest}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
       - RERANKER_MODEL=${RERANKER_MODEL:-BAAI/bge-reranker-base}
       - CHUNK_SIZE=${CHUNK_SIZE:-800}

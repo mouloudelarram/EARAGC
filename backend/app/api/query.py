@@ -76,10 +76,25 @@ def _call_ollama(question: str, context: str) -> str:
         f"Question: {question}\n\nAnswer:"
     )
     try:
+        ollama_base_url = settings.ollama_base_url_resolved
+        model_name = settings.OLLAMA_MODEL
+
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                tags = client.get(f"{ollama_base_url}/api/tags")
+                tags.raise_for_status()
+                available = [
+                    model.get("name") for model in tags.json().get("models", []) if model.get("name")
+                ]
+                preferred = [settings.OLLAMA_MODEL, "llama3.1:latest", "phi3:latest", *available]
+                model_name = next((name for name in preferred if name in available), available[0] if available else model_name)
+        except Exception:
+            pass
+
         with httpx.Client(timeout=120.0) as client:
             resp = client.post(
-                f"{settings.OLLAMA_BASE_URL}/api/generate",
-                json={"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False},
+                f"{ollama_base_url}/api/generate",
+                json={"model": model_name, "prompt": prompt, "stream": False},
             )
             resp.raise_for_status()
             return resp.json().get("response", "No response from model.")

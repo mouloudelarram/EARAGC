@@ -1,6 +1,7 @@
 """
 Application configuration — loaded from environment variables / .env file.
 """
+import socket
 from pathlib import Path
 from typing import List
 
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
 
     # ── Ollama ────────────────────────────────────────────────────────────────
     OLLAMA_BASE_URL: str = "http://ollama:11434"
-    OLLAMA_MODEL: str = "llama3.2"
+    OLLAMA_MODEL: str = "llama3.1:latest"
 
     # ── Embedding / Reranker ──────────────────────────────────────────────────
     EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
@@ -57,6 +58,26 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         """Parse CORS_ORIGINS string into a list."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def ollama_base_url_resolved(self) -> str:
+        """Prefer the Docker service name when it resolves, otherwise fall back to localhost."""
+        base = self.OLLAMA_BASE_URL.strip()
+        if not base:
+            return "http://localhost:11434"
+
+        try:
+            host = base.split("//", 1)[1].split("/", 1)[0].split(":", 1)[0]
+            if host not in {"localhost", "127.0.0.1", "0.0.0.0"}:
+                try:
+                    socket.gethostbyname(host)
+                    return base
+                except socket.gaierror:
+                    pass
+        except Exception:
+            pass
+
+        return "http://localhost:11434"
 
     @property
     def max_file_size_bytes(self) -> int:
