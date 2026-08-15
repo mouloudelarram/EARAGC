@@ -18,8 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.core.database import Base, init_db
-from app.models.document import Document
-from app.models.chunk import Chunk
+from app.core.models import Document, Chunk
 from app.repositories.document_repository import DocumentRepository
 from app.repositories.chunk_repository import ChunkRepository, ChunkCreate
 

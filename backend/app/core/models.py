@@ -103,7 +103,7 @@ class Chunk(Base):
     )
     page_number = Column(Integer, nullable=True, comment="Source page number (PDFs only)")
     section = Column(String(512), nullable=True, comment="Section heading")
-    metadata = Column(
+    extra_metadata = Column(
         JSONB,
         nullable=False,
         server_default="{}",
@@ -124,4 +124,3 @@ class Chunk(Base):
 
     def __repr__(self) -> str:
         return f"<Chunk id={self.id} doc={self.document_id} idx={self.chunk_index}>"
-

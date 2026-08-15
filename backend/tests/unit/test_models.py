@@ -6,8 +6,7 @@ import uuid
 
 import pytest
 
-from app.models.document import Document
-from app.models.chunk import Chunk
+from app.core.models import Document, Chunk
 
 
 class TestDocumentModel:
@@ -68,7 +67,7 @@ class TestChunkModel:
         assert chunk.section is None
 
     def test_chunk_with_optional_fields(self):
-        """Chunk stores optional metadata fields correctly."""
+        """Chunk stores optional extra_metadata fields correctly."""
         doc_id = uuid.uuid4()
         chunk = Chunk(
             document_id=doc_id,
@@ -76,11 +75,11 @@ class TestChunkModel:
             chunk_index=1,
             page_number=3,
             section="Introduction",
-            metadata={"author": "Alice"},
+            extra_metadata={"author": "Alice"},
         )
         assert chunk.page_number == 3
         assert chunk.section == "Introduction"
-        assert chunk.metadata == {"author": "Alice"}
+        assert chunk.extra_metadata == {"author": "Alice"}
 
     def test_chunk_repr(self):
         """__repr__ returns a readable string."""
@@ -91,4 +90,3 @@ class TestChunkModel:
     def test_chunk_tablename(self):
         """ORM table name is 'chunks'."""
         assert Chunk.__tablename__ == "chunks"
-

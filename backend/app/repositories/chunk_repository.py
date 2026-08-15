@@ -20,7 +20,7 @@ class ChunkCreate:
     chunk_index: int
     page_number: Optional[int] = None
     section: Optional[str] = None
-    metadata: dict = field(default_factory=dict)
+    extra_metadata: dict = field(default_factory=dict)
     embedding: Optional[list[float]] = None
 
 
@@ -44,7 +44,7 @@ class ChunkRepository:
                 chunk_index=c.chunk_index,
                 page_number=c.page_number,
                 section=c.section,
-                metadata=c.metadata or {},
+                extra_metadata=c.extra_metadata or {},
                 embedding=c.embedding,
             )
             for c in chunks
@@ -83,4 +83,3 @@ class ChunkRepository:
         )
         db.commit()
         return deleted
-
