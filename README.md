@@ -231,15 +231,15 @@ All settings are configurable via `.env`:
 | Phase | Status | Description |
 |-------|--------|-------------|
 | Phase 1 | ✅ | Foundation — Docker, FastAPI, React |
-| Phase 2 | 🔄 | Database — SQLAlchemy, pgvector |
-| Phase 3 | ⏳ | Document Ingestion |
-| Phase 4 | ⏳ | Embeddings |
-| Phase 5 | ⏳ | Vector Retrieval |
-| Phase 6 | ⏳ | BM25 |
-| Phase 7 | ⏳ | Hybrid Search |
-| Phase 8 | ⏳ | Reranking |
-| Phase 9 | ⏳ | LLM Generation |
-| Phase 10 | ⏳ | Frontend |
+| Phase 2 | ✅ | Database — SQLAlchemy, pgvector |
+| Phase 3 | ✅ | Document Ingestion |
+| Phase 4 | ✅ | Embeddings |
+| Phase 5 | ✅ | Vector Retrieval |
+| Phase 6 | ✅ | BM25 |
+| Phase 7 | ✅ | Hybrid Search |
+| Phase 8 | ✅ | Reranking |
+| Phase 9 | ✅ | LLM Generation |
+| Phase 10 | ✅ | Frontend |
 | Phase 11 | ⏳ | Evaluation |
 | Phase 12 | ⏳ | Finalization |
 
