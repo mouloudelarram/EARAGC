@@ -36,6 +36,7 @@ frontend/.env.local
 
 # --- Docker volumes (local) ---
 data/postgres/
+data/documents/
 
 # --- IDE ---
 .idea/
